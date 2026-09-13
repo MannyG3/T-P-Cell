@@ -1,7 +1,111 @@
+"use client";
+
+import { useState } from "react";
+import { supabase } from "@/lib/supabase-browser";
+
+type View = "Overview" | "Students" | "Alumni" | "Import data" | "Drives";
+type Role = "TPO Admin" | "Student" | "Alumni";
+
+const navItems: { label: View; icon: string }[] = [
+  { label: "Overview", icon: "⌂" },
+  { label: "Students", icon: "♧" },
+  { label: "Alumni", icon: "◎" },
+  { label: "Import data", icon: "↥" },
+];
+
+const students = [
+  { initials: "AS", name: "Aarav Shah", roll: "CO-22104", department: "Computer Engineering", score: "8.7 CGPA", status: "Placed", company: "TCS Digital", tone: "coral" },
+  { initials: "PM", name: "Priya More", roll: "IF-22118", department: "Information Technology", score: "8.4 CGPA", status: "In process", company: "2 active applications", tone: "lime" },
+  { initials: "RK", name: "Rohan Kulkarni", roll: "ME-22203", department: "Mechanical Engineering", score: "78.2%", status: "Looking", company: "3 eligible drives", tone: "blue" },
+  { initials: "SN", name: "Sneha Nair", roll: "EL-22111", department: "Electronics & Telecom", score: "9.1 CGPA", status: "Placed", company: "Larsen & Toubro", tone: "lavender" },
+  { initials: "VK", name: "Vedant Kadam", roll: "CE-22134", department: "Civil Engineering", score: "7.9 CGPA", status: "Looking", company: "5 eligible drives", tone: "yellow" },
+];
+
+const drives = [
+  { company: "Tata Consultancy Services", role: "Graduate Engineer Trainee", date: "18 Sep 2024", applicants: "86 applicants", package: "₹7.2 LPA", mark: "TCS", color: "navy", status: "Open" },
+  { company: "Larsen & Toubro", role: "Diploma Engineer", date: "24 Sep 2024", applicants: "42 applicants", package: "₹5.4 LPA", mark: "L&T", color: "red", status: "Open" },
+  { company: "Bharat Electronics", role: "Junior Technical Officer", date: "02 Oct 2024", applicants: "18 applicants", package: "₹6.8 LPA", mark: "BEL", color: "blue", status: "Draft" },
+];
+
+function Badge({ children, tone = "green" }: { children: React.ReactNode; tone?: string }) {
+  return <span className={`badge badge-${tone.toLowerCase().replace(" ", "-")}`}>{children}</span>;
+}
+
+function LoginScreen({ onLogin }: { onLogin: (role: Role) => void }) {
+  const [role, setRole] = useState<Role>("TPO Admin");
+  const [isCreating, setIsCreating] = useState(false);
+  const [profile, setProfile] = useState({ fullName: "", rollNo: "", department: "", batchYear: "", company: "", designation: "" });
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+
+  const submit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!email.trim() || !password.trim()) {
+      setError("Enter your email and password to continue.");
+      return;
+    }
+    if (isCreating && (!profile.fullName.trim() || (role !== "TPO Admin" && (!profile.department.trim() || !profile.batchYear.trim() || (role === "Student" && !profile.rollNo.trim()))))) {
+      setError("Complete the required profile fields to continue.");
+      return;
+    }
+    if (supabase && isCreating) {
+      const accountRole = role === "TPO Admin" ? "admin" : role === "Student" ? "student" : "alumni";
+      const { data, error: authError } = await supabase.auth.signUp({ email, password, options: { data: { role: accountRole, full_name: profile.fullName, roll_no: profile.rollNo, department: profile.department, batch_year: Number(profile.batchYear), current_company: profile.company, designation: profile.designation } } });
+      if (authError) { setError(authError.message); return; }
+      if (!data.session) { setError("Account created. Check your email to confirm the account before signing in."); return; }
+    } else if (supabase) {
+      const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
+      if (authError) { setError(authError.message); return; }
+    }
+    onLogin(role);
+  };
+
+  return <main className="login-shell"><div className="login-art"><div className="login-brand"><span className="brand-mark">ct</span><span>campus<span>track</span></span></div><div className="login-message"><p className="eyebrow">TRAINING & PLACEMENT OFFICE</p><h1>Make every opportunity count.</h1><p>One calm workspace for your students, recruiters, and placement team.</p></div><div className="login-art-footer"><span>Academic year 2024–25</span><span>Secure institute workspace</span></div></div><section className="login-panel"><div className="login-panel-inner"><div className="login-mobile-brand"><span className="brand-mark">ct</span><span>campus<span>track</span></span></div><p className="eyebrow">{isCreating ? "NEW ACCOUNT" : "WELCOME BACK"}</p><h2>{isCreating ? `Create your ${role} profile` : "Sign in to your workspace"}</h2><p className="login-subtitle">{isCreating ? "Add a few details so your placement profile is ready." : "Use your institute account to continue."}</p><div className="role-switcher" role="tablist" aria-label="Choose account role">{(["TPO Admin", "Student", "Alumni"] as Role[]).map((option) => <button type="button" className={role === option ? "selected" : ""} key={option} onClick={() => setRole(option)}>{option}</button>)}</div><form onSubmit={submit}>{isCreating && <div className="profile-fields"><label>Full name<input value={profile.fullName} onChange={(event) => setProfile({ ...profile, fullName: event.target.value })} placeholder="Your full name" /></label>{role !== "TPO Admin" && <>{role === "Student" && <label>Roll number<input value={profile.rollNo} onChange={(event) => setProfile({ ...profile, rollNo: event.target.value })} placeholder="e.g. CO-22104" /></label>}<label>Department<input value={profile.department} onChange={(event) => setProfile({ ...profile, department: event.target.value })} placeholder="e.g. Computer Engineering" /></label><label>Batch year<input type="number" value={profile.batchYear} onChange={(event) => setProfile({ ...profile, batchYear: event.target.value })} placeholder="e.g. 2025" /></label>{role === "Alumni" && <><label>Current company<input value={profile.company} onChange={(event) => setProfile({ ...profile, company: event.target.value })} placeholder="Company name" /></label><label>Designation<input value={profile.designation} onChange={(event) => setProfile({ ...profile, designation: event.target.value })} placeholder="Your role" /></label></>}</>}</div>}<label>Email address<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder={role === "Student" ? "rollno@institute.edu" : "name@institute.edu"} /></label><label>Password<div className="password-field"><input type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Enter your password" /><button type="button" onClick={() => setPassword(password ? "" : "demo-password")} aria-label="Toggle password visibility">◉</button></div></label>{!isCreating && <div className="login-options"><label className="remember-option"><input type="checkbox" defaultChecked /> <span>Remember me</span></label><button type="button" className="forgot-button" onClick={() => setError("Password reset instructions will be sent by your institute admin.")}>Forgot password?</button></div>}{error && <p className="login-error">{error}</p>}<button className="login-submit" type="submit">{isCreating ? `Create ${role} account` : `Continue as ${role}`} <span>→</span></button></form><p className="login-help">{isCreating ? "Already have an account?" : "Need a TPO account?"} <button type="button" onClick={() => { setIsCreating(!isCreating); setError(""); }}>{isCreating ? "Sign in instead" : "Create one here"}</button></p></div></section></main>;
+}
+
 export default function Home() {
+  const [signedIn, setSignedIn] = useState(false);
+  const [signedInRole, setSignedInRole] = useState<Role>("TPO Admin");
+  const [activeView, setActiveView] = useState<View>("Overview");
+  const [query, setQuery] = useState("");
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [notice, setNotice] = useState("");
+  const [driveFilter, setDriveFilter] = useState("All drives");
+  const [studentStatus, setStudentStatus] = useState("All statuses");
+  const filteredStudents = students.filter((student) => `${student.name} ${student.roll} ${student.department}`.toLowerCase().includes(query.toLowerCase()) && (studentStatus === "All statuses" || student.status === studentStatus));
+  const filteredDrives = drives.filter((drive) => driveFilter === "All drives" || drive.status === driveFilter);
+  const showNotice = (message: string) => { setNotice(message); window.setTimeout(() => setNotice(""), 2600); };
+
+  if (!signedIn) return <LoginScreen onLogin={(role) => { setSignedInRole(role); setSignedIn(true); }} />;
+
   return (
-    <main>
-      <div>Hello world!</div>
+    <main className="app-shell">
+      <aside className={`sidebar ${menuOpen ? "sidebar-open" : ""}`}>
+        <div className="brand"><span className="brand-mark">ct</span><span>campus<span>track</span></span></div>
+        <div className="workspace-label">WORKSPACE</div>
+        <nav>{navItems.map((item) => <button className={`nav-item ${activeView === item.label ? "active" : ""}`} key={item.label} onClick={() => { setActiveView(item.label); setMenuOpen(false); }}><span className="nav-icon">{item.icon}</span>{item.label}{item.label === "Import data" && <span className="nav-new">new</span>}</button>)}</nav>
+        <div className="sidebar-rule" /><div className="workspace-label">MANAGE</div>
+        <nav><button className={`nav-item ${activeView === "Drives" ? "active" : ""}`} onClick={() => setActiveView("Drives")}><span className="nav-icon">▣</span>Placement drives</button><button className="nav-item" onClick={() => showNotice("Reports are being prepared.")}><span className="nav-icon">▤</span>Reports</button><button className="nav-item" onClick={() => showNotice("Settings saved for admins.")}><span className="nav-icon">⚙</span>Settings</button></nav>
+        <div className="sidebar-bottom"><div className="help-box"><strong>Need a hand?</strong><span>Read the quick-start guide</span><button onClick={() => showNotice("Guide opened in a new workspace.")}>Open guide <span>↗</span></button></div><div className="profile-mini"><div className="avatar avatar-coral">AK</div><div><strong>Aniket Kulkarni</strong><span>TPO Admin</span></div><button aria-label="Account menu">•••</button></div></div>
+      </aside>
+      <section className="main-content">
+        <header className="topbar"><button className="mobile-menu" onClick={() => setMenuOpen(!menuOpen)} aria-label="Toggle menu">☰</button><div className="breadcrumb"><span>Academic year</span><strong>2024–25</strong><span className="chevron">⌄</span></div><div className="top-actions"><button className="icon-button" onClick={() => showNotice("You are all caught up.")} aria-label="Notifications">♢<i /></button><button className="top-avatar" onClick={async () => { if (supabase) await supabase.auth.signOut(); setSignedIn(false); setNotice(""); }} aria-label={`Sign out ${signedInRole}`}>AK</button></div></header>
+        <div className="page-wrap">
+          {notice && <div className="toast">✓ {notice}</div>}
+          {activeView === "Overview" && <>
+            <div className="page-heading"><div><p className="eyebrow">MONDAY, 16 SEPTEMBER 2024</p><h1>Good morning, Aniket <span>✦</span></h1><p className="subheading">Here&apos;s what&apos;s happening across your placement cell.</p></div><button className="primary-button" onClick={() => setActiveView("Import data")}><span>＋</span> Import students</button></div>
+            <section className="metrics-grid"><article className="metric-card accent-coral"><div className="metric-top"><span>Total students</span><span className="metric-icon">♧</span></div><strong>1,248</strong><div className="metric-foot"><span className="trend-up">↗ 12.4%</span><span>vs last year</span></div></article><article className="metric-card accent-lime"><div className="metric-top"><span>Placement rate</span><span className="metric-icon">◒</span></div><strong>68.6<span className="unit">%</span></strong><div className="metric-foot"><span className="trend-up">↗ 4.8%</span><span>vs last year</span></div></article><article className="metric-card accent-blue"><div className="metric-top"><span>Active drives</span><span className="metric-icon">↗</span></div><strong>12</strong><div className="metric-foot"><span className="trend-neutral">3 closing soon</span></div></article><article className="metric-card accent-yellow"><div className="metric-top"><span>Highest package</span><span className="metric-icon">₹</span></div><strong>18.5<span className="unit"> LPA</span></strong><div className="metric-foot"><span className="trend-neutral">↑ 22% from 2023–24</span></div></article></section>
+            <div className="insight-grid"><section className="panel pulse-panel"><div className="panel-heading"><div><h2>Placement pulse</h2><p>Department-wise progress this year.</p></div><span className="live-label">LIVE</span></div><div className="pulse-list"><div className="pulse-row"><span>Computer Engineering</span><div className="progress-track"><i style={{ width: "82%" }} /></div><strong>82%</strong></div><div className="pulse-row"><span>Information Technology</span><div className="progress-track"><i style={{ width: "74%" }} /></div><strong>74%</strong></div><div className="pulse-row"><span>Electronics & Telecom</span><div className="progress-track"><i style={{ width: "61%" }} /></div><strong>61%</strong></div><div className="pulse-row"><span>Mechanical Engineering</span><div className="progress-track"><i style={{ width: "48%" }} /></div><strong>48%</strong></div></div></section><section className="panel attention-panel"><div className="panel-heading"><div><h2>Needs attention</h2><p>Small things worth handling today.</p></div><span className="attention-count">3</span></div><div className="attention-list"><button onClick={() => setActiveView("Drives")}><span className="attention-dot dot-coral" /><span><strong>L&T drive closes in 8 days</strong><small>42 applicants need review</small></span><b>→</b></button><button onClick={() => setActiveView("Import data")}><span className="attention-dot dot-yellow" /><span><strong>23 student profiles incomplete</strong><small>Missing resume or contact details</small></span><b>→</b></button><button onClick={() => showNotice("Reminder sent to the placement team.")}><span className="attention-dot dot-blue" /><span><strong>Interview schedule pending</strong><small>3 candidates at Bharat Electronics</small></span><b>→</b></button></div></section></div>
+            <div className="content-grid"><section className="panel students-panel"><div className="panel-heading"><div><h2>Recently updated students</h2><p>Keep an eye on the latest profile activity.</p></div><button className="text-button" onClick={() => setActiveView("Students")}>View all <span>→</span></button></div><div className="student-list">{students.slice(0, 4).map((student) => <div className="student-row" key={student.roll}><div className={`avatar avatar-${student.tone}`}>{student.initials}</div><div className="student-name"><strong>{student.name}</strong><span>{student.roll} · {student.department}</span></div><div className="student-score">{student.score}</div><Badge tone={student.status}>{student.status}</Badge></div>)}</div></section><section className="panel action-panel"><div className="panel-heading"><div><h2>Quick actions</h2><p>Common tasks, right where you need them.</p></div></div><div className="action-list"><button onClick={() => setActiveView("Import data")}><span className="action-icon action-orange">↥</span><span><strong>Import student data</strong><small>Upload Excel or CSV file</small></span><span className="action-arrow">→</span></button><button onClick={() => setActiveView("Drives")}><span className="action-icon action-green">＋</span><span><strong>Create a placement drive</strong><small>Add a new opportunity</small></span><span className="action-arrow">→</span></button><button onClick={() => showNotice("Report export started.")}><span className="action-icon action-purple">▤</span><span><strong>Export placement report</strong><small>MSBTE-ready Excel report</small></span><span className="action-arrow">→</span></button></div></section></div>
+            <section className="panel drives-panel"><div className="panel-heading"><div><h2>Upcoming placement drives</h2><p>Opportunities currently open for your students.</p></div><button className="text-button" onClick={() => setActiveView("Drives")}>Manage drives <span>→</span></button></div><div className="drive-list">{drives.map((drive) => <div className="drive-row" key={drive.company}><div className={`company-mark mark-${drive.color}`}>{drive.mark}</div><div className="drive-info"><strong>{drive.company}</strong><span>{drive.role}</span></div><div className="drive-date"><span>DRIVE DATE</span><strong>{drive.date}</strong></div><div className="drive-applicants"><span>APPLICANTS</span><strong>{drive.applicants}</strong></div><div className="drive-package"><span>PACKAGE</span><strong>{drive.package}</strong></div><button className="row-menu" onClick={() => showNotice(`${drive.company} selected.`)}>•••</button></div>)}</div></section>
+          </>}
+          {activeView === "Students" && <><div className="page-heading view-heading"><div><p className="eyebrow">STUDENT DIRECTORY</p><h1>Students</h1><p className="subheading">Manage profiles, placement status, and eligibility.</p></div><button className="primary-button" onClick={() => setActiveView("Import data")}><span>＋</span> Import students</button></div><section className="panel directory-panel"><div className="directory-toolbar"><div className="search-box"><span>⌕</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search students..." /></div><button className="filter-button" onClick={() => setStudentStatus(studentStatus === "All statuses" ? "Placed" : "All statuses")}>Status: {studentStatus} <span>⌄</span></button></div><div className="table-wrap"><table><thead><tr><th>STUDENT</th><th>DEPARTMENT</th><th>ACADEMIC SCORE</th><th>STATUS</th><th>DETAIL</th></tr></thead><tbody>{filteredStudents.map((student) => <tr key={student.roll}><td><div className="table-person"><div className={`avatar avatar-${student.tone}`}>{student.initials}</div><div><strong>{student.name}</strong><span>{student.roll}</span></div></div></td><td>{student.department}</td><td>{student.score}</td><td><Badge tone={student.status}>{student.status}</Badge></td><td><button className="row-menu" onClick={() => showNotice(`${student.name}'s profile selected.`)}>•••</button></td></tr>)}</tbody></table></div></section></>}
+          {activeView === "Drives" && <><div className="page-heading view-heading"><div><p className="eyebrow">PLACEMENT WORKFLOW</p><h1>Placement drives</h1><p className="subheading">Track opportunities, applicants, and deadlines from one place.</p></div><button className="primary-button" onClick={() => showNotice("New drive form opened.")}><span>＋</span> Create drive</button></div><section className="panel directory-panel"><div className="directory-toolbar"><div className="drive-summary"><strong>{drives.length}</strong><span>total drives</span></div><button className={`filter-button ${driveFilter === "All drives" ? "selected-filter" : ""}`} onClick={() => setDriveFilter("All drives")}>All drives</button><button className={`filter-button ${driveFilter === "Open" ? "selected-filter" : ""}`} onClick={() => setDriveFilter("Open")}>Open</button><button className={`filter-button ${driveFilter === "Draft" ? "selected-filter" : ""}`} onClick={() => setDriveFilter("Draft")}>Drafts</button></div><div className="drive-list full-drive-list">{filteredDrives.map((drive) => <div className="drive-row" key={drive.company}><div className={`company-mark mark-${drive.color}`}>{drive.mark}</div><div className="drive-info"><strong>{drive.company}</strong><span>{drive.role}</span></div><div className="drive-date"><span>DRIVE DATE</span><strong>{drive.date}</strong></div><div className="drive-applicants"><span>APPLICANTS</span><strong>{drive.applicants}</strong></div><div className="drive-package"><span>PACKAGE</span><strong>{drive.package}</strong></div><Badge tone={drive.status === "Open" ? "Placed" : "In process"}>{drive.status}</Badge><button className="row-menu" onClick={() => showNotice(`${drive.company} selected.`)}>•••</button></div>)}</div></section></>}
+          {activeView === "Alumni" && <div className="page-heading view-heading"><div><p className="eyebrow">NETWORK</p><h1>Alumni directory</h1><p className="subheading">Connect students with the people already out there.</p></div><button className="primary-button" onClick={() => showNotice("Alumni export started.")}><span>↓</span> Export directory</button></div>}
+          {activeView === "Import data" && <div className="import-view"><div className="page-heading view-heading"><div><p className="eyebrow">DATA MANAGEMENT</p><h1>Import data</h1><p className="subheading">Bring your student and alumni records into CampusTrack.</p></div></div><div className="import-grid"><div className="upload-card"><div className="upload-icon">↥</div><h2>Import students</h2><p>Upload a CSV or Excel file. We&apos;ll help map columns to your student profile fields.</p><button className="primary-button" onClick={() => showNotice("Student file picker ready.")}>Choose file <span>→</span></button><span className="upload-hint">.xlsx, .xls or .csv · up to 10 MB</span></div><div className="upload-card"><div className="upload-icon icon-lavender">◎</div><h2>Import alumni</h2><p>Add alumni records in bulk to start building your institute&apos;s network.</p><button className="secondary-button" onClick={() => showNotice("Alumni file picker ready.")}>Choose file <span>→</span></button><span className="upload-hint">.xlsx, .xls or .csv · up to 10 MB</span></div></div><div className="import-note"><span>✦</span><div><strong>New here?</strong><p>Download our template to see the expected columns and avoid mapping errors.</p></div><button className="text-button" onClick={() => showNotice("Template download started.")}>Download template ↓</button></div></div>}
+        </div>
+      </section>
     </main>
   );
 }

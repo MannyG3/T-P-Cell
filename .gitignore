@@ -30,3 +30,11 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .vercel
+
+# one-off combined migration for pasting into the Supabase SQL Editor
+supabase/RUN_THIS_IN_SQL_EDITOR.sql
+
+# test output
+/playwright-report/
+/test-results/
+/blob-report/

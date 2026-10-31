@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { isStoredResume, MAX_RESUME_BYTES, openResume, RESUME_BUCKET, resumePath } from "@/lib/resume";
 import { useDashboard } from "../dashboard-context";
+import { AccessRequestsCard, InviteUserCard } from "./UsersAccess";
 import { Field } from "../ui";
 
 export function SettingsView() {
@@ -19,6 +20,7 @@ export function SettingsView() {
       <PasswordCard />
       {me && <StudentDetailsCard key={me.id} />}
       {meAlumnus && <AlumnusDetailsCard key={meAlumnus.id} />}
+      {user.role === "tpo_admin" && <><InviteUserCard /><AccessRequestsCard /></>}
     </div>
   </>;
 }

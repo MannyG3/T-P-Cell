@@ -1,4 +1,5 @@
-export type AccountRole = "admin" | "student" | "alumni";
+import type { AccountRole } from "./roles";
+export type { AccountRole };
 export type PlacementStatus = "placed" | "unplaced" | "higher-studies";
 export type DriveStatus = "upcoming" | "ongoing" | "completed";
 export type ApplicationStatus = "applied" | "shortlisted" | "interviewed" | "selected" | "rejected";

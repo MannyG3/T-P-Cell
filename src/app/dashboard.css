@@ -6,7 +6,24 @@ select, textarea { font: inherit; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .loading-state { display: flex; align-items: center; gap: 10px; color: var(--muted); font: 13px Arial, sans-serif; padding: 40px 0; }
 .inline-error { margin-bottom: 16px; padding: 10px 14px; border-radius: 6px; background: #fdecea; color: #a8473a; font: 12px Arial, sans-serif; }
-.login-info { margin: -4px 0 15px; color: #4c7a4a; background: #eef7e6; border-radius: 6px; padding: 10px 12px; font: 11px/1.5 Arial, sans-serif; }
+/* Neutral (not success-green, not error-red) for confirmations like "reset link sent". */
+.login-info { margin: -4px 0 15px; color: #3d4a63; background: #f1f3f7; border: 1px solid #e1e5ee; border-radius: 6px; padding: 10px 12px; font: 11px/1.5 Arial, sans-serif; }
+.login-panel form label select, .login-panel form label textarea { display: block; width: 100%; border: 1px solid #deded8; border-radius: 6px; outline: 0; color: var(--ink); margin-top: 8px; padding: 12px 13px; background: #fff; font: 12px Arial, sans-serif; resize: vertical; }
+.login-panel form label select:focus, .login-panel form label textarea:focus { border-color: #e4765e; box-shadow: 0 0 0 3px #ff765f16; }
+.login-panel form > label { display: block; color: #5c5d66; margin-bottom: 17px; font: 700 11px Arial, sans-serif; }
+.login-panel label em { font-weight: 400; font-style: normal; color: #a1a2a8; }
+.login-help a { color: #dc6b56; font-weight: 700; }
+.login-submit { text-decoration: none; }
+.password-field button { display: grid; place-items: center; line-height: 0; }
+.honeypot { position: absolute; left: -10000px; width: 1px; height: 1px; opacity: 0; }
+.request-item { display: flex; justify-content: space-between; gap: 14px; padding: 12px 0; border-bottom: 1px solid #f1f0ed; font: 12px Arial, sans-serif; }
+.request-item:last-child { border-bottom: 0; }
+.request-item strong, .request-item span, .request-item small { display: block; }
+.request-item span { color: #5f606a; margin-top: 3px; }
+.request-item p { margin: 6px 0 0; color: #5f606a; font-style: italic; }
+.request-item small { color: #a1a2a8; margin-top: 4px; font-size: 10px; }
+.request-actions { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+@media (max-width: 700px) { .request-item { flex-direction: column; } }
 
 /* badges */
 .badge-green { color: #4c8047; background: #e8f5da; }

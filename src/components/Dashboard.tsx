@@ -2,7 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { academicYearLabel } from "@/lib/academic-year";
 import { loadDashboardData } from "@/lib/data";
+import { roleLabel } from "@/lib/roles";
 import type { DashboardData, SessionUser } from "@/lib/types";
 import { DashboardContext, type DashboardContextValue, type StudentFilter, type View } from "./dashboard-context";
 import { Avatar, formatDate } from "./ui";
@@ -27,13 +29,8 @@ const manageNav: { label: View; icon: string; text: string }[] = [
   { label: "Settings", icon: "⚙", text: "Settings" },
 ];
 
-const roleTitle = { admin: "TPO Admin", student: "Student", alumni: "Alumni" } as const;
-
-function academicYear(date = new Date()): string {
-  // Indian academic years start in June.
-  const start = date.getMonth() >= 5 ? date.getFullYear() : date.getFullYear() - 1;
-  return `${start}–${String(start + 1).slice(2)}`;
-}
+const roleTitle = roleLabel;
+const academicYear = (date: Date) => academicYearLabel(date);
 
 export function Dashboard({ supabase, user: initialUser, onSignOut }: { supabase: SupabaseClient; user: SessionUser; onSignOut: () => void }) {
   const [user, setUser] = useState(initialUser);
@@ -47,7 +44,8 @@ export function Dashboard({ supabase, user: initialUser, onSignOut }: { supabase
   const [popover, setPopover] = useState<"none" | "notifications" | "account">("none");
   const [toast, setToast] = useState<{ message: string; kind: "success" | "error" } | null>(null);
   const [batch, setBatch] = useState<"all" | number>("all");
-  const isAdmin = user.role === "admin";
+  const isAdmin = user.role === "tpo_admin";
+  const isCoordinator = user.role === "dept_coordinator";
 
   const refresh = useCallback(async () => {
     try {
@@ -123,7 +121,7 @@ export function Dashboard({ supabase, user: initialUser, onSignOut }: { supabase
         </> : <>
           <div className="workspace-label">MY SPACE</div>
           <nav>
-            {navButton("Overview", "⌂", user.role === "student" ? "Drives & applications" : "Opportunities")}
+            {navButton("Overview", "⌂", isCoordinator ? "My department" : user.role === "student" ? "Drives & applications" : "Opportunities")}
             {navButton("Settings", "⚙", "My account")}
           </nav>
         </>}
@@ -185,7 +183,8 @@ export function Dashboard({ supabase, user: initialUser, onSignOut }: { supabase
           {context && (
             <DashboardContext.Provider value={context}>
               {loadError && <div className="inline-error">Last refresh failed: {loadError}</div>}
-              {!isAdmin && activeView === "Overview" && <MemberHome />}
+              {isCoordinator && activeView === "Overview" && <CoordinatorPlaceholder />}
+              {!isAdmin && !isCoordinator && activeView === "Overview" && <MemberHome />}
               {isAdmin && activeView === "Overview" && <Overview now={now} />}
               {isAdmin && activeView === "Students" && <StudentsView filter={studentFilter} setFilter={setStudentFilter} />}
               {isAdmin && activeView === "Alumni" && <AlumniView />}
@@ -199,6 +198,22 @@ export function Dashboard({ supabase, user: initialUser, onSignOut }: { supabase
       </section>
     </main>
   );
+}
+
+/** Department coordinators sign in today; their branch dashboard is Phase 4.7. */
+function CoordinatorPlaceholder() {
+  return <>
+    <div className="page-heading view-heading">
+      <div><p className="eyebrow">DEPARTMENT</p><h1>My department</h1><p className="subheading">Placement progress for your branch.</p></div>
+      <button className="primary-button" disabled title="Coming soon">Coming soon</button>
+    </div>
+    <section className="panel">
+      <div className="empty-state">
+        <strong>Department dashboard coming soon</strong>
+        <p>Your account is active. The branch-level dashboard for coordinators is being built; until then, use My account to manage your sign-in.</p>
+      </div>
+    </section>
+  </>;
 }
 
 function NotificationsPopover({ isAdmin, supabase, notifications, refresh, notify }: { isAdmin: boolean; supabase: SupabaseClient; notifications: DashboardData["notifications"]; refresh: () => Promise<void>; notify: DashboardContextValue["notify"] }) {

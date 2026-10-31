@@ -140,13 +140,14 @@ function StudentEditor({ student, onClose }: { student: Student; onClose: () => 
   };
 
   const sendPasswordLink = async () => {
-    const email = student.profiles?.email;
-    if (!email) return;
     setBusy(true);
-    const { error: mailError } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin });
+    try {
+      const { email } = await adminRequest<{ email: string }>(supabase, "/api/admin/people/password-link", { id: student.id });
+      notify(`Password-setup link sent to ${email}.`);
+    } catch (e) {
+      notify(e instanceof Error ? e.message : "Could not send the email.", "error");
+    }
     setBusy(false);
-    if (mailError) return notify(`Could not send the email: ${mailError.message}`, "error");
-    notify(`Password-setup link sent to ${email}.`);
   };
 
   const remove = async () => {

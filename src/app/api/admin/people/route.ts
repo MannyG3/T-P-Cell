@@ -34,7 +34,7 @@ export async function POST(request: Request) {
     const rows = body?.rows;
     const rowOffset = Number.isInteger(body?.rowOffset) ? Number(body?.rowOffset) : 0;
     const mailer = body?.sendInvites ? publicClient() : null;
-    const redirectTo = request.headers.get("origin") ?? undefined;
+    const redirectTo = `${request.headers.get("origin") ?? process.env.NEXT_PUBLIC_SITE_URL ?? ""}/auth/confirm?next=/reset-password`;
     if (kind !== "students" && kind !== "alumni") throw new HttpError(400, "kind must be 'students' or 'alumni'.");
     if (!Array.isArray(rows) || rows.length === 0) throw new HttpError(400, "No rows to import.");
     if (rows.length > MAX_ROWS) throw new HttpError(400, `Send at most ${MAX_ROWS} rows per request.`);

@@ -37,6 +37,9 @@ npm run dev                  # http://localhost:3000
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | client and server | Public anon key (safe to expose; RLS protects data) |
 | `SUPABASE_SERVICE_ROLE_KEY` | **server only** | Creating and deleting accounts (import, add, delete) and the keep-alive cron. Never prefix it with `NEXT_PUBLIC_`. |
 | `CRON_SECRET` | server (Vercel) | Protects `/api/cron/keep-alive` |
+| `NEXT_PUBLIC_SITE_URL` | client and server | Base URL for emailed links (invite, reset). Falls back to the request origin. |
+| `DEMO_TPO_EMAIL`, `DEMO_TPO_PASSWORD`, `DEMO_TPO_NAME` | local only | `npm run seed:tpo` creates this TPO Admin. |
+| `DEMO_USER_PASSWORD` | local only | Password for every account `npm run seed` creates. |
 
 ### Database
 
@@ -60,12 +63,13 @@ npm run seed         # 18 students, 5 alumni, companies, drives, applications (p
 npm run seed:reset   # removes exactly what the seed added
 ```
 
-The TPO admin account is created once by hand. Add a user under Supabase → Authentication, then run:
+Create the first TPO Admin from env vars (no credentials in code):
 
-```sql
-update public.profiles set role = 'admin' where email = 'tpo@yourinstitute.edu';
-delete from public.students where id = (select id from public.profiles where email = 'tpo@yourinstitute.edu');
+```bash
+npm run seed:tpo     # uses DEMO_TPO_EMAIL / DEMO_TPO_PASSWORD from .env.local
 ```
+
+Every other staff member, student and alumnus is invited from **Settings → Users & access**.
 
 ## Tests
 
@@ -89,6 +93,14 @@ CI (`.github/workflows/ci.yml`) runs lint, typecheck, unit tests and a build on 
 5. **Keep the free tier awake:** `vercel.json` schedules `/api/cron/keep-alive` daily. Alternatively, upgrade Supabase to Pro, which never pauses.
 6. Push to `main`. Vercel builds and deploys automatically.
 7. Before real use: run `npm run seed:reset` (or use a separate production project), and give the TPO admin a strong password.
+
+## Authentication
+
+- **Sessions:** cookie sessions via `@supabase/ssr`. `src/proxy.ts` refreshes the session on every request and sends signed-out visitors to `/login?next=…`; pages verify the user again on the server.
+- **Remember me:** ticked keeps a 400-day cookie. Unticked turns the auth cookies into browser-session cookies (see `src/lib/auth/remember.ts`).
+- **Roles:** `tpo_admin`, `dept_coordinator`, `student`, `alumni`, stored in `profiles.role` and set only on the server. The login tab only changes the form; a mismatched tab is rejected.
+- **Accounts:** no self-sign-up. TPO Admins invite staff, students and alumni. Alumni can also request access at `/request-access`, which a TPO approves.
+- **Email links** all land on `/auth/confirm` and then `/reset-password`.
 
 ## Project structure
 

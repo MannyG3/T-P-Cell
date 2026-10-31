@@ -1,5 +1,5 @@
-import type { SupabaseClient, User } from "@supabase/supabase-js";
-import type { AccountRole, Alumnus, Application, Company, DashboardData, Drive, Notification, SessionUser, Student } from "./types";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Alumnus, Application, Company, DashboardData, Drive, Notification, Student } from "./types";
 
 const PAGE_SIZE = 1000;
 
@@ -12,12 +12,6 @@ async function fetchAll<T>(build: (from: number, to: number) => PromiseLike<{ da
     rows.push(...(data ?? []));
     if (!data || data.length < PAGE_SIZE) return rows;
   }
-}
-
-export async function loadSessionUser(supabase: SupabaseClient, user: User): Promise<SessionUser | null> {
-  const { data, error } = await supabase.from("profiles").select("role, full_name, email").eq("id", user.id).single<{ role: AccountRole; full_name: string; email: string }>();
-  if (error || !data) return null;
-  return { id: user.id, email: data.email, fullName: data.full_name, role: data.role };
 }
 
 export async function loadDashboardData(supabase: SupabaseClient): Promise<DashboardData> {

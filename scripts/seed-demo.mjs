@@ -1,7 +1,7 @@
 // Seeds realistic demo data into the Supabase project in .env.local.
 //   node --env-file=.env.local scripts/seed-demo.mjs          # add demo data
 //   node --env-file=.env.local scripts/seed-demo.mjs --reset  # remove it again
-// Demo accounts are tagged with user_metadata.demo = true; all use password "demo1234".
+// Demo accounts are tagged with user_metadata.demo = true; all use DEMO_USER_PASSWORD (set it in .env.local).
 import { createClient } from "@supabase/supabase-js";
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -11,7 +11,11 @@ if (!url || !key) {
   process.exit(1);
 }
 const db = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
-const PASSWORD = "demo1234";
+const PASSWORD = process.env.DEMO_USER_PASSWORD;
+if (!process.argv.includes("--reset") && (!PASSWORD || PASSWORD.length < 8)) {
+  console.error("Set DEMO_USER_PASSWORD (8+ characters) in .env.local; it is used for every demo account.");
+  process.exit(1);
+}
 
 const DEPTS = { CO: "Computer Engineering", IF: "Information Technology", EJ: "Electronics & Telecom", ME: "Mechanical Engineering", CE: "Civil Engineering", EE: "Electrical Engineering" };
 
@@ -158,7 +162,7 @@ async function seed() {
   ]);
 
   console.log(`\nSeeded ${STUDENTS.length} students, ${ALUMNI.length} alumni, ${COMPANIES.length} companies and ${DRIVES.length} drives.`);
-  console.log(`Demo student login: aarav.shah@institute.edu / ${PASSWORD}`);
+  console.log("Demo accounts use the password in DEMO_USER_PASSWORD, e.g. aarav.shah@institute.edu.");
 }
 
 (process.argv.includes("--reset") ? reset() : seed()).catch((error) => {

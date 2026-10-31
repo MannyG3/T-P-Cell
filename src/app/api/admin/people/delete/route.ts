@@ -11,7 +11,7 @@ export async function POST(request: Request) {
 
     const { data: profile } = await admin.from("profiles").select("role").eq("id", id).single<{ role: string }>();
     if (!profile) throw new HttpError(404, "Account not found.");
-    if (profile.role === "admin") throw new HttpError(400, "Admin accounts cannot be deleted from the dashboard.");
+    if (profile.role === "tpo_admin" || profile.role === "dept_coordinator") throw new HttpError(400, "Staff accounts cannot be deleted here. Disable them in Settings instead.");
 
     // Cascades to profiles -> students/alumni -> applications.
     const { error } = await admin.auth.admin.deleteUser(id);

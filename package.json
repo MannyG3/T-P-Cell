@@ -10,15 +10,17 @@
     "typecheck": "tsc --noEmit",
     "test": "node --test \"tests/unit/**/*.test.ts\"",
     "test:e2e": "node --env-file-if-exists=.env.local ./node_modules/@playwright/test/cli.js test",
-    "seed": "node --env-file=.env.local scripts/seed-demo.mjs",
-    "seed:reset": "node --env-file=.env.local scripts/seed-demo.mjs --reset"
+    "seed": "node --env-file-if-exists=.env.local scripts/seed-demo.mjs",
+    "seed:reset": "node --env-file-if-exists=.env.local scripts/seed-demo.mjs --reset",
+    "seed:tpo": "node --env-file-if-exists=.env.local scripts/seed-tpo.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.116.0",
     "next": "16.3.4",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "server-only": "^0.0.1"
   },
   "devDependencies": {
     "@playwright/test": "^1.52.0",

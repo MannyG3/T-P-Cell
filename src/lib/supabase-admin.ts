@@ -1,5 +1,6 @@
-// Server-only: uses the service-role key, which bypasses Row Level Security.
-// Never import this module from a client component.
+// Uses the service-role key, which bypasses Row Level Security. The "server-only"
+// import makes the build fail if a client component ever imports this module.
+import "server-only";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 export class HttpError extends Error {
@@ -32,8 +33,8 @@ export async function requireAdmin(request: Request): Promise<{ admin: SupabaseC
   const admin = serviceClient();
   const { data: { user } } = await admin.auth.getUser(token);
   if (!user) throw new HttpError(401, "Your session has expired. Sign in again.");
-  const { data: profile } = await admin.from("profiles").select("role").eq("id", user.id).single<{ role: string }>();
-  if (profile?.role !== "admin") throw new HttpError(403, "Only TPO admins can do this.");
+  const { data: profile } = await admin.from("profiles").select("role, status").eq("id", user.id).single<{ role: string; status: string }>();
+  if (profile?.role !== "tpo_admin" || profile.status !== "active") throw new HttpError(403, "Only TPO Admins can do this.");
   return { admin, userId: user.id };
 }
 

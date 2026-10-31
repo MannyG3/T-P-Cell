@@ -32,7 +32,8 @@ function packageValue(range: string | null): number | null {
 
 /** Mirrors the check_student_application trigger: open until completed or past the deadline. */
 export function applicationsOpen(drive: Pick<Drive, "status" | "application_deadline">): boolean {
-  return drive.status !== "completed" && (drive.application_deadline === null || daysUntil(drive.application_deadline) >= 0);
+  // `== null` also covers undefined, e.g. before the deadline migration has been applied.
+  return drive.status !== "completed" && (drive.application_deadline == null || daysUntil(drive.application_deadline) >= 0);
 }
 
 export function DeadlineNote({ deadline }: { deadline: string | null }) {

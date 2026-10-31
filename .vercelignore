@@ -1,0 +1,13 @@
+# Secrets live in Vercel's Environment Variables, never in the upload.
+.env
+.env.*
+!.env.example
+
+# Local-only artifacts
+node_modules
+.next
+playwright-report
+test-results
+blob-report
+supabase/RUN_THIS_IN_SQL_EDITOR.sql
+*.tsbuildinfo
